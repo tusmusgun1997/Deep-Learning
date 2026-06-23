@@ -7,33 +7,35 @@ Build a **single-file Python program** that implements a Multi-Layer Perceptron 
 ## 1. Network Architecture
 
 ```
-Input Layer (2 neurons)          Hidden Layer 1 (1 neuron)       Hidden Layer 2 (1 neuron)       Output Layer (1 neuron)
-┌──────────┐                     ┌──────────┐                    ┌──────────┐                    ┌──────────┐
-│  x1      │───── w1 ──────────▶│          │                    │          │                    │          │
-│  (CGPA)  │                     │  h1      │───── w5 ─────────▶│  h2      │───── w6 ─────────▶│  ŷ       │
-│          │───── w2 ──────────▶│          │                    │          │                    │ (Package) │
-└──────────┘                     └──────────┘                    └──────────┘                    └──────────┘
-┌──────────┐                         ▲ b1                            ▲ b2                            ▲ b3
-│  x2      │───── w3 ───────────────┘                               │                               │
-│ (Profile)│                                                        │                               │
-│          │───── w4 ───────────────────────────────────────────────┘                               │
-└──────────┘                                                                                        │
-                                                                                                    │
+Input Layer (2 neurons)              Hidden Layer (2 neurons)              Output Layer (1 neuron)
+┌──────────┐                         ┌──────────┐
+│  x1      │──── w1 ───────────────▶│  h1      │
+│  (CGPA)  │                         │          │──── w5 ──────────┐
+│          │──── w2 ──────┐   ┌────▶│          │                  │      ┌──────────┐
+└──────────┘              │   │      └──────────┘                  ├─────▶│  y_hat   │
+                          │   │          ▲ b1                      │      │ (Package) │
+                          ▼   │                                    │      └──────────┘
+┌──────────┐              │   │      ┌──────────┐                  │          ▲ b3
+│  x2      │──── w4 ──────┼───┘     │  h2      │                  │
+│ (Profile)│              └────────▶│          │──── w6 ──────────┘
+│          │──── w3 ───────────────▶│          │
+└──────────┘                         └──────────┘
+                                         ▲ b2
 ```
 
 > **NOTE:**
-> Each hidden layer has **1 neuron** (not multiple), giving us exactly **9 learnable parameters** (6 weights + 3 biases). Hidden Layer 1 takes both inputs; Hidden Layer 2 takes input from Hidden Layer 1 **and** x2 (Profile); Output takes input from Hidden Layer 2.
+> There is **1 hidden layer with 2 neurons** (h1 and h2). Both inputs (x1, x2) connect to both hidden neurons. Both hidden neurons connect to the single output neuron. This gives exactly **9 learnable parameters** (6 weights + 3 biases).
 
-### Refined Connections (to reach exactly 6 weights)
+### Connection Table (6 weights)
 
 | Weight | From → To |
 |--------|-----------|
 | `w1` | x1 (CGPA) → h1 |
 | `w2` | x2 (Profile) → h1 |
-| `w3` | h1 → h2 |
+| `w3` | x1 (CGPA) → h2 |
 | `w4` | x2 (Profile) → h2 |
-| `w5` | h2 → output |
-| `w6` | h1 → output |
+| `w5` | h1 → output |
+| `w6` | h2 → output |
 
 | Bias | Applied At |
 |------|------------|
@@ -82,7 +84,7 @@ b1, b2, b3 = 0.1, 0.1, 0.1
 
 ### Step 3 — Define the Activation Function
 
-Since this is a **regression** problem, we will use **Sigmoid** for hidden layers and **linear (identity)** for the output layer.
+Since this is a **regression** problem, we will use **Sigmoid** for the hidden layer and **linear (identity)** for the output layer.
 
 ```python
 def sigmoid(z):
@@ -94,7 +96,7 @@ def sigmoid_derivative(z):
 ```
 
 > **NOTE:**
-> We use sigmoid in hidden layers to introduce non-linearity. The output layer is **linear** (no activation) since we're predicting a continuous value (package in lakhs).
+> We use sigmoid in the hidden layer to introduce non-linearity. The output layer is **linear** (no activation) since we're predicting a continuous value (package in lakhs).
 
 ---
 
@@ -103,14 +105,17 @@ def sigmoid_derivative(z):
 Compute the predicted output step by step:
 
 ```
-z_h1 = w1*x1 + w2*x2 + b1
-a_h1 = sigmoid(z_h1)
+Hidden Neuron h1:
+    z_h1 = w1*x1 + w2*x2 + b1
+    a_h1 = sigmoid(z_h1)
 
-z_h2 = w3*a_h1 + w4*x2 + b2
-a_h2 = sigmoid(z_h2)
+Hidden Neuron h2:
+    z_h2 = w3*x1 + w4*x2 + b2
+    a_h2 = sigmoid(z_h2)
 
-z_out = w5*a_h2 + w6*a_h1 + b3
-ŷ = z_out  (linear activation)
+Output Neuron:
+    z_out = w5*a_h1 + w6*a_h2 + b3
+    y_hat = z_out  (linear activation)
 ```
 
 ---
@@ -136,41 +141,37 @@ This is the core. We compute the **partial derivative of the loss with respect t
 For a single data point:
 
 ```
-dL/dŷ = -2/n * (y - ŷ)
+dL/dy_hat = (2/n) * (y_hat - y)
 ```
 
 #### 6b. Output Layer Gradients
 
-Since output activation is linear (`ŷ = z_out`), `dŷ/dz_out = 1`:
+Since output activation is linear (`y_hat = z_out`), `dy_hat/dz_out = 1`:
 
 ```
-dL/dw5 = dL/dŷ * dŷ/dz_out * dz_out/dw5 = dL/dŷ * 1 * a_h2
-dL/dw6 = dL/dŷ * 1 * a_h1
-dL/db3 = dL/dŷ * 1
+dL/dw5 = dL/dy_hat * a_h1
+dL/dw6 = dL/dy_hat * a_h2
+dL/db3 = dL/dy_hat
 ```
 
-#### 6c. Hidden Layer 2 Gradients
+#### 6c. Hidden Neuron h1 Gradients
 
 ```
-dL/dz_h2 = dL/dŷ * dŷ/dz_out * dz_out/da_h2 * da_h2/dz_h2
-         = dL/dŷ * w5 * sigmoid_derivative(z_h2)
-
-dL/dw3 = dL/dz_h2 * a_h1
-dL/dw4 = dL/dz_h2 * x2
-dL/db2 = dL/dz_h2
-```
-
-#### 6d. Hidden Layer 1 Gradients
-
-h1 feeds into **both** h2 (via w3) and output (via w6), so gradients flow back through both paths:
-
-```
-dL/da_h1 = (dL/dŷ * w6) + (dL/dz_h2 * w3)
-dL/dz_h1 = dL/da_h1 * sigmoid_derivative(z_h1)
+dL/dz_h1 = dL/dy_hat * w5 * sigmoid_derivative(z_h1)
 
 dL/dw1 = dL/dz_h1 * x1
 dL/dw2 = dL/dz_h1 * x2
 dL/db1 = dL/dz_h1
+```
+
+#### 6d. Hidden Neuron h2 Gradients
+
+```
+dL/dz_h2 = dL/dy_hat * w6 * sigmoid_derivative(z_h2)
+
+dL/dw3 = dL/dz_h2 * x1
+dL/dw4 = dL/dz_h2 * x2
+dL/db2 = dL/dz_h2
 ```
 
 ---
@@ -180,7 +181,7 @@ dL/db1 = dL/dz_h1
 For each of the 9 parameters, apply:
 
 ```
-parameter = parameter - learning_rate * (∂L/∂parameter)
+parameter = parameter - learning_rate * (dL/d_parameter)
 ```
 
 We accumulate gradients across all 4 data points, then update once per epoch.
@@ -197,9 +198,9 @@ We accumulate gradients across all 4 data points, then update once per epoch.
 For epoch 1 to 5:
     Initialize all 9 gradient accumulators to 0
     For each data point (x1, x2, y):
-        1. Forward pass → compute ŷ
+        1. Forward pass -> compute y_hat
         2. Compute loss contribution
-        3. Backward pass → compute all 9 partial derivatives
+        3. Backward pass -> compute all 9 partial derivatives
         4. Accumulate gradients
     Update all 9 parameters using gradient descent
     Print epoch number, MSE loss, and all 9 parameter values
@@ -223,19 +224,19 @@ After 5 epochs, print:
 | 1 | `w1` | `dL/dz_h1 * x1` |
 | 2 | `w2` | `dL/dz_h1 * x2` |
 | 3 | `b1` | `dL/dz_h1` |
-| 4 | `w3` | `dL/dz_h2 * a_h1` |
+| 4 | `w3` | `dL/dz_h2 * x1` |
 | 5 | `w4` | `dL/dz_h2 * x2` |
 | 6 | `b2` | `dL/dz_h2` |
-| 7 | `w5` | `dL/dŷ * a_h2` |
-| 8 | `w6` | `dL/dŷ * a_h1` |
-| 9 | `b3` | `dL/dŷ` |
+| 7 | `w5` | `dL/dy_hat * a_h1` |
+| 8 | `w6` | `dL/dy_hat * a_h2` |
+| 9 | `b3` | `dL/dy_hat` |
 
 ---
 
 ## 5. File Structure
 
 ```
-mlp_from_scratch.py    ← Single file, zero imports (except math.exp)
+implementation.py    <- Single file, zero imports (except math.exp)
 ```
 
 ---
@@ -243,7 +244,7 @@ mlp_from_scratch.py    ← Single file, zero imports (except math.exp)
 ## 6. Verification Plan
 
 ### Manual Verification
-- Run `python mlp_from_scratch.py`
+- Run `python implementation.py`
 - Confirm the loss **decreases** across the 5 epochs
 - Confirm all 9 parameters are printed and updated each epoch
 - Confirm predictions are printed alongside actual values after training
