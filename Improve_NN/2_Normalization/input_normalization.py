@@ -5,8 +5,9 @@
 # feature dominates the gradients.
 #
 # Methods implemented:
-#   1. Min-Max Normalization  -> scales to [0, 1]
+#   1. Min-Max Normalization     -> scales to [0, 1]
 #   2. Z-Score (Standardization) -> scales to mean=0, std=1
+#   3. Max-Abs Normalization     -> scales to [-1, 1]
 # ============================================================
 
 import math
@@ -74,6 +75,28 @@ def z_score_normalize(data, feature_idx):
     return result, mean, std
 
 
+def max_abs_normalize(data, feature_idx):
+    """Max-Abs: Scale feature to [-1, 1] by dividing by the largest |value|.
+
+    Formula: x_norm = x / max(|x|)
+
+    Example: CGPA values [3, 5, 7, 8]
+      max(|x|)=8
+      3 -> 0.375, 5 -> 0.625, 7 -> 0.875, 8 -> 1.0
+    Best when data is already centered near 0 / sparse (it keeps zeros at zero).
+    """
+    values = [row[feature_idx] for row in data]
+    max_abs = max(abs(v) for v in values)
+    if max_abs == 0:
+        max_abs = 1.0
+
+    result = [row[:] for row in data]
+    for row in result:
+        row[feature_idx] = row[feature_idx] / max_abs
+
+    return result, max_abs
+
+
 def normalize_all(data, method="zscore"):
     """Normalize all features in the dataset."""
     result = [row[:] for row in data]
@@ -82,6 +105,9 @@ def normalize_all(data, method="zscore"):
         if method == "minmax":
             result, min_v, max_v = min_max_normalize(result, f)
             stats.append(('minmax', min_v, max_v))
+        elif method == "maxabs":
+            result, max_abs = max_abs_normalize(result, f)
+            stats.append(('maxabs', max_abs))
         else:
             result, mean, std = z_score_normalize(result, f)
             stats.append(('zscore', mean, std))
@@ -111,6 +137,12 @@ X_zscore, zs_stats = normalize_all(X, method="zscore")
 print(f"\n  After Z-Score Normalization (mean=0, std=1):")
 print(f"    {'CGPA':>8} {'Profile':>8}")
 for row in X_zscore:
+    print(f"    {row[0]:>8.4f} {row[1]:>8.4f}")
+
+X_maxabs, ma_stats = normalize_all(X, method="maxabs")
+print(f"\n  After Max-Abs Normalization (range [-1, 1]):")
+print(f"    {'CGPA':>8} {'Profile':>8}")
+for row in X_maxabs:
     print(f"    {row[0]:>8.4f} {row[1]:>8.4f}")
 
 
@@ -181,12 +213,13 @@ print(f"{'=' * 60}")
 raw = train_network(X, label="Raw (no normalization)")
 mm = train_network(X_minmax, label="Min-Max Normalized")
 zs = train_network(X_zscore, label="Z-Score Normalized")
+ma = train_network(X_maxabs, label="Max-Abs Normalized")
 
 print(f"\n{'=' * 60}")
 print("  SUMMARY")
 print(f"{'=' * 60}")
-print(f"  {'':>20} {'Raw':>10} {'Min-Max':>10} {'Z-Score':>10}")
-print(f"  {'-' * 50}")
-print(f"  {'Final MSE':>20} {raw[-1]:>10.4f} {mm[-1]:>10.4f} {zs[-1]:>10.4f}")
-print(f"  {'Best MSE':>20} {min(raw):>10.4f} {min(mm):>10.4f} {min(zs):>10.4f}")
+print(f"  {'':>20} {'Raw':>10} {'Min-Max':>10} {'Z-Score':>10} {'Max-Abs':>10}")
+print(f"  {'-' * 62}")
+print(f"  {'Final MSE':>20} {raw[-1]:>10.4f} {mm[-1]:>10.4f} {zs[-1]:>10.4f} {ma[-1]:>10.4f}")
+print(f"  {'Best MSE':>20} {min(raw):>10.4f} {min(mm):>10.4f} {min(zs):>10.4f} {min(ma):>10.4f}")
 print(f"{'=' * 60}")

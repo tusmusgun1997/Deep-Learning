@@ -33,8 +33,13 @@ class Adam:
     """Adam Optimizer.
     Combines momentum (exponential moving average of gradients) and
     RMSprop (exponential moving average of squared gradients) with bias correction.
+
+    Canonical defaults: lr=0.001, beta1=0.9, beta2=0.999, eps=1e-8.
+    NOTE: Adam's usual LR (0.001) is ~10x SMALLER than SGD's (0.01-0.1) -- do not
+    copy an SGD learning rate into Adam. This demo passes lr=0.01 explicitly only
+    so the SGD-vs-Adam comparison below is a fair head-to-head at the same LR.
     """
-    def __init__(self, num_params, lr=0.01, beta1=0.9, beta2=0.999, epsilon=1e-8):
+    def __init__(self, num_params, lr=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
         self.lr = lr
         self.beta1 = beta1
         self.beta2 = beta2

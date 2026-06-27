@@ -119,7 +119,7 @@ def train_network(clip_method="none", clip_val=5.0):
             dL = (2.0 / n) * error
 
             dW3 = [dL * a2[k] for k in range(H2)]
-            dL_z2 = [dL * W3[0][k] * leaky_relu_derivative(z2[j]) for j in range(H2)]
+            dL_z2 = [dL * W3[0][j] * leaky_relu_derivative(z2[j]) for j in range(H2)]
             dW2 = [[dL_z2[j] * a1[k] for k in range(H1)] for j in range(H2)]
             dL_a1 = [sum(dL_z2[j] * W2[j][k] for j in range(H2)) for k in range(H1)]
             dL_z1 = [dL_a1[j] * leaky_relu_derivative(z1[j]) for j in range(H1)]

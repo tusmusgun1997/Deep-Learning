@@ -1,7 +1,8 @@
 # ============================================================
 # LEARNING RATE SCHEDULING — From Scratch
 # ============================================================
-# Step Decay, Exponential Decay, and Cosine Annealing.
+# Step Decay, Exponential Decay, Cosine Annealing,
+# Warm-up + Cosine, and ReduceLROnPlateau.
 # Compares how dynamically adjusting the learning rate
 # improves training stability and convergence compared
 # to a fixed high learning rate.
@@ -42,7 +43,50 @@ def cosine_annealing(epoch, initial_lr=0.015, eta_min=0.001, T_max=100):
     return eta_min + 0.5 * (initial_lr - eta_min) * (1.0 + math.cos(math.pi * curr_t / T_max))
 
 
-def train(scheduler_func, initial_lr, label, **kwargs):
+def warmup_cosine(epoch, initial_lr=0.015, warmup_epochs=10, eta_min=0.001, T_max=100):
+    """Warm-up + Cosine: ramp the LR up linearly for the first `warmup_epochs`,
+    THEN cosine-anneal down to eta_min.
+
+    Why warm up? At epoch 1 the weights are random; a full-size LR can cause a
+    wild, destabilizing first update. Ramping in gently avoids that. This is the
+    standard schedule for training Transformers and large-batch models.
+    """
+    if epoch <= warmup_epochs:
+        return initial_lr * epoch / warmup_epochs          # linear ramp 0 -> initial_lr
+    progress = (epoch - warmup_epochs) / max(1, T_max - warmup_epochs)
+    progress = min(1.0, progress)
+    return eta_min + 0.5 * (initial_lr - eta_min) * (1.0 + math.cos(math.pi * progress))
+
+
+class ReduceLROnPlateau:
+    """Adaptive scheduler: drop the LR by `factor` when the monitored loss stops
+    improving for `patience` epochs. Unlike the formula-based schedulers above,
+    this responds to the ACTUAL training dynamics (pairs well with early stopping).
+
+    Usage: read `.lr` for the current epoch, then call `.step(loss)` afterward.
+    """
+    def __init__(self, initial_lr=0.015, factor=0.5, patience=10, min_lr=1e-5, min_delta=1e-4):
+        self.lr = initial_lr
+        self.factor = factor
+        self.patience = patience
+        self.min_lr = min_lr
+        self.min_delta = min_delta
+        self.best = float('inf')
+        self.counter = 0
+
+    def step(self, loss):
+        """Call once per epoch with that epoch's loss; may lower self.lr."""
+        if loss < self.best - self.min_delta:
+            self.best = loss          # improvement -> reset patience
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.lr = max(self.min_lr, self.lr * self.factor)   # plateau -> drop LR
+                self.counter = 0
+
+
+def train(scheduler_func, initial_lr, label, plateau=None, **kwargs):
     random.seed(42)
     # Initialize weights
     W1 = [[he_init(2) for _ in range(2)] for _ in range(H1)]
@@ -63,7 +107,9 @@ def train(scheduler_func, initial_lr, label, **kwargs):
 
     for epoch in range(1, EPOCHS + 1):
         # Determine learning rate for this epoch
-        if scheduler_func:
+        if plateau is not None:
+            lr = plateau.lr                                    # adaptive, set by loss feedback
+        elif scheduler_func:
             lr = scheduler_func(epoch, initial_lr=initial_lr, **kwargs)
         else:
             lr = initial_lr
@@ -112,6 +158,9 @@ def train(scheduler_func, initial_lr, label, **kwargs):
         mse = total_loss / n
         losses.append(mse)
 
+        if plateau is not None:
+            plateau.step(mse)                                  # feed loss back for next epoch
+
         if epoch % 25 == 0 or epoch == 1:
             print(f"    Epoch {epoch:>3}  |  LR: {lr:.5f}  |  MSE: {mse:.4f}")
 
@@ -126,10 +175,17 @@ fixed = train(None, initial_lr=0.015, label="Fixed Learning Rate (lr=0.015)")
 step  = train(step_decay, initial_lr=0.015, label="Step Decay (half every 25 epochs)", step_size=25, gamma=0.5)
 exp   = train(exponential_decay, initial_lr=0.015, label="Exponential Decay (rate=0.015)", decay_rate=0.015)
 cos   = train(cosine_annealing, initial_lr=0.015, label="Cosine Annealing (to 0.001)", eta_min=0.001, T_max=EPOCHS)
+warm  = train(warmup_cosine, initial_lr=0.015, label="Warm-up (10) + Cosine", warmup_epochs=10, eta_min=0.001, T_max=EPOCHS)
+# patience=20 here (vs the default 10) because this tiny raw-input demo is noisy
+# early on -- a longer patience avoids over-reacting to those early loss spikes.
+plat  = train(None, initial_lr=0.015, label="ReduceLROnPlateau (factor=0.5, patience=20)",
+              plateau=ReduceLROnPlateau(initial_lr=0.015, factor=0.5, patience=20))
 
 print(f"\n{'=' * 65}")
-print(f"  Fixed LR final MSE:          {fixed[-1]:.4f}")
-print(f"  Step Decay final MSE:        {step[-1]:.4f}")
-print(f"  Exponential Decay final MSE: {exp[-1]:.4f}")
-print(f"  Cosine Annealing final MSE:  {cos[-1]:.4f}")
+print(f"  Fixed LR final MSE:           {fixed[-1]:.4f}")
+print(f"  Step Decay final MSE:         {step[-1]:.4f}")
+print(f"  Exponential Decay final MSE:  {exp[-1]:.4f}")
+print(f"  Cosine Annealing final MSE:   {cos[-1]:.4f}")
+print(f"  Warm-up + Cosine final MSE:   {warm[-1]:.4f}")
+print(f"  ReduceLROnPlateau final MSE:  {plat[-1]:.4f}")
 print(f"{'=' * 65}")
