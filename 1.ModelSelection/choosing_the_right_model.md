@@ -162,12 +162,12 @@ This already narrows the model family.
 
 ### Step 4 — Look at the target (the thing you're predicting)
 - **For classification:** Is it **balanced**? If 98% of emails are "not spam" and 2% are "spam," a lazy model can score 98% by always guessing "not spam" — useless! This is **class imbalance**, and it changes how you measure success (use precision/recall, not just accuracy).
-- **For regression:** Is the target **skewed** or full of **outliers**? (e.g., most houses cost \$300k but one mansion costs \$50M). This affects your loss function choice — see the [LossFunction](../LossFunction/loss_functions.md) notes (MSE vs MAE vs Huber).
+- **For regression:** Is the target **skewed** or full of **outliers**? (e.g., most houses cost \$300k but one mansion costs \$50M). This affects your loss function choice — see the [LossFunction](../4.LossFunction/loss_functions.md) notes (MSE vs MAE vs Huber).
 
 ### Step 5 — Inspect the features (columns)
 - **Missing values:** How many blanks? A column that's 90% empty may be useless.
 - **Numerical vs categorical:** Numbers (age, income) vs categories (city, color).
-- **Scale:** Do columns have wildly different ranges (age 0–100 vs salary 0–1,000,000)? Many models need **normalization** first — see [Normalization](../Improve_NN/2_Normalization/normalization.md).
+- **Scale:** Do columns have wildly different ranges (age 0–100 vs salary 0–1,000,000)? Many models need **normalization** first — see [Normalization](../6.Improve_NN/2_Normalization/normalization.md).
 - **Outliers:** Are there crazy values that don't make sense (age = 999)?
 
 ### Step 6 — Look at relationships

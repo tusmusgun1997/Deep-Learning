@@ -82,7 +82,7 @@ For any positive input, ReLU's derivative is exactly **1**. Multiplying by 1 rep
 ### The "Dying ReLU" catch
 If a neuron's input is always negative, ReLU outputs 0 and its gradient is 0 forever — the neuron is **dead** and never recovers. **Leaky ReLU** fixes this by allowing a small slope (0.01) for negative inputs, so a trickle of gradient always flows.
 
-> See the [ActivationFunction](../../ActivationFunction/activation_functions.md) folder for the full deep-dive on each one.
+> See the [ActivationFunction](../../3.ActivationFunction/activation_functions.md) folder for the full deep-dive on each one.
 
 ---
 

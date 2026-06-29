@@ -159,10 +159,10 @@ Each limitation maps directly to something you already built:
 
 | Perceptron limitation | The fix | Where in this repo |
 |---|---|---|
-| Only a straight line | **Stack neurons in hidden layers** + non-linear activations → bends straight lines into curves | [MLP/classification](../MLP/classification/classification.md) |
-| Hard step (no gradient) | **Smooth activations** (sigmoid, tanh, ReLU) → differentiable → trainable by backprop | [Sigmoid](../ActivationFunction/1_Sigmoid/sigmoid.md) · [ReLU](../ActivationFunction/3_ReLU/relu.md) |
-| Can't do XOR / circle | A 2-layer network carves curved / closed regions | the circle in [classification.py](../MLP/classification/classification.py) |
-| No probabilities | Sigmoid output + a proper loss | [Binary Cross-Entropy](../LossFunction/3_BinaryCrossEntropy/bce.md) |
+| Only a straight line | **Stack neurons in hidden layers** + non-linear activations → bends straight lines into curves | [MLP/classification](../5.MLP/classification/classification.md) |
+| Hard step (no gradient) | **Smooth activations** (sigmoid, tanh, ReLU) → differentiable → trainable by backprop | [Sigmoid](../3.ActivationFunction/1_Sigmoid/sigmoid.md) · [ReLU](../3.ActivationFunction/3_ReLU/relu.md) |
+| Can't do XOR / circle | A 2-layer network carves curved / closed regions | the circle in [classification.py](../5.MLP/classification/classification.py) |
+| No probabilities | Sigmoid output + a proper loss | [Binary Cross-Entropy](../4.LossFunction/3_BinaryCrossEntropy/bce.md) |
 
 A modern neuron is just a perceptron with the hard step swapped for a smooth activation — and an MLP is a grid of them. Everything you learned in the `MLP` folder grows directly out of this one neuron.
 

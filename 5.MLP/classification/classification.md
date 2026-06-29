@@ -80,7 +80,7 @@ The first instinct was to copy the regression file's style: **sigmoid** hidden u
 | middle band | 66% | 0.900 | 0.900 | **+0.000** |
 
 A gap of **+0.000 everywhere** is a red flag. The MLP was **underfitting** — collapsing to a basically-linear function. Two causes:
-1. **Sigmoid hidden units** squash gradients (max slope 0.25 — see [vanishing gradients](../../Improve_NN/3_Vanishing_Gradients/vanishing_gradients.md)), so the hidden layer learned almost nothing.
+1. **Sigmoid hidden units** squash gradients (max slope 0.25 — see [vanishing gradients](../../6.Improve_NN/3_Vanishing_Gradients/vanishing_gradients.md)), so the hidden layer learned almost nothing.
 2. Some of those "non-linear" datasets weren't actually non-linear enough (the *band* rule's upper bound was almost never hit, making it effectively linear).
 
 ### Fix 1 — Switch hidden activation to **tanh** + train longer → ✅ the MLP comes alive
@@ -120,7 +120,7 @@ Validation accuracy peaked at 0.92, then DROPPED to 0.86.
 Meanwhile training accuracy kept climbing to 0.945.
 ```
 
-That widening train↔val gap is the classic **overfitting** signature (see [overfitting](../../Improve_NN/1_Overfitting/overfitting.md)). The final model was *worse* than one stopped halfway.
+That widening train↔val gap is the classic **overfitting** signature (see [overfitting](../../6.Improve_NN/1_Overfitting/overfitting.md)). The final model was *worse* than one stopped halfway.
 
 ### Fix 3 — Smaller network + fewer epochs → ✅ clean generalization
 
@@ -168,7 +168,7 @@ CGPA (4–10) and Profile (1–5) live on different scales, which skews gradient
 x_norm = (x - mean) / std
 ```
 
-**Critical:** `mean` and `std` are computed from the **training set only**, then applied to the validation set. Using validation stats would **leak** information and inflate the score. (More in [normalization](../../Improve_NN/2_Normalization/normalization.md).) The target is already 0/1, so it is **not** standardized.
+**Critical:** `mean` and `std` are computed from the **training set only**, then applied to the validation set. Using validation stats would **leak** information and inflate the score. (More in [normalization](../../6.Improve_NN/2_Normalization/normalization.md).) The target is already 0/1, so it is **not** standardized.
 
 ### 5.2 Forward pass
 
@@ -206,7 +206,7 @@ BCE (one sample):  L = −[ y·log(p) + (1−y)·log(1−p) ]
 - If `y = 1`: `L = −log(p)`. Predict p=0.99 → loss 0.01 (tiny). Predict p=0.01 → loss 4.6 (huge).
 - If `y = 0`: `L = −log(1−p)`. Symmetric.
 
-Why not MSE? With a sigmoid output, MSE produces a gradient containing an extra `sigmoid'(z)` factor that **vanishes** when the model is confidently wrong (slow learning), and the surface is non-convex. BCE is the proper maximum-likelihood loss for yes/no outcomes and gives the clean gradient below. (Full comparison in [Binary Cross-Entropy](../../LossFunction/3_BinaryCrossEntropy/bce.md).)
+Why not MSE? With a sigmoid output, MSE produces a gradient containing an extra `sigmoid'(z)` factor that **vanishes** when the model is confidently wrong (slow learning), and the surface is non-convex. BCE is the proper maximum-likelihood loss for yes/no outcomes and gives the clean gradient below. (Full comparison in [Binary Cross-Entropy](../../4.LossFunction/3_BinaryCrossEntropy/bce.md).)
 
 ### 5.5 The beautiful gradient: `dL/dz_out = p − y`
 
@@ -339,7 +339,7 @@ Full-batch GD:  1 weight update per epoch   (average over all 400 training point
 Mini-batch SGD: ⌈400 / 48⌉ ≈ 9 updates per epoch
 ```
 
-So in the **same** 150 epochs, mini-batch makes **~9× more updates** (~1,350 vs 150). Each update also uses a slightly **noisy** gradient (from a random subset), and that noise actually *helps* — it knocks the model out of flat spots and forms sharp non-linear boundaries faster. This is exactly why Attempt 2 (full-batch) timed out while mini-batch finished in ~2 seconds. (More on optimizers in [optimizers](../../Improve_NN/5_Optimizers/optimizers.md).)
+So in the **same** 150 epochs, mini-batch makes **~9× more updates** (~1,350 vs 150). Each update also uses a slightly **noisy** gradient (from a random subset), and that noise actually *helps* — it knocks the model out of flat spots and forms sharp non-linear boundaries faster. This is exactly why Attempt 2 (full-batch) timed out while mini-batch finished in ~2 seconds. (More on optimizers in [optimizers](../../6.Improve_NN/5_Optimizers/optimizers.md).)
 
 We shuffle the training order every epoch (`random.shuffle(order)`) so the mini-batches differ each pass.
 
@@ -380,7 +380,7 @@ Actual: Placed         FN = 6           TP = 40
 - **Precision** = TP / (TP + FP) = 40 / 42 = **0.95** — of those we *called* placed, 95% truly were.
 - **Recall** = TP / (TP + FN) = 40 / 46 = **0.87** — of those who *actually* got placed, we caught 87%.
 
-Accuracy alone can lie when classes are imbalanced; precision and recall tell you *which kind* of mistake the model makes. (Why accuracy isn't enough is discussed in [model selection](../../ModelSelection/choosing_the_right_model.md).)
+Accuracy alone can lie when classes are imbalanced; precision and recall tell you *which kind* of mistake the model makes. (Why accuracy isn't enough is discussed in [model selection](../../1.ModelSelection/choosing_the_right_model.md).)
 
 ---
 
@@ -394,6 +394,6 @@ Accuracy alone can lie when classes are imbalanced; precision and recall tell yo
 6. **Standardize features (train stats only)** and judge with **precision/recall + a confusion matrix**, not just accuracy.
 
 ### Related reading in this repo
-- [Binary Cross-Entropy loss](../../LossFunction/3_BinaryCrossEntropy/bce.md) · [Sigmoid](../../ActivationFunction/1_Sigmoid/sigmoid.md) · [Tanh](../../ActivationFunction/2_Tanh/tanh.md)
-- [Overfitting & early stopping](../../Improve_NN/1_Overfitting/overfitting.md) · [Optimizers](../../Improve_NN/5_Optimizers/optimizers.md) · [Normalization](../../Improve_NN/2_Normalization/normalization.md)
+- [Binary Cross-Entropy loss](../../4.LossFunction/3_BinaryCrossEntropy/bce.md) · [Sigmoid](../../3.ActivationFunction/1_Sigmoid/sigmoid.md) · [Tanh](../../3.ActivationFunction/2_Tanh/tanh.md)
+- [Overfitting & early stopping](../../6.Improve_NN/1_Overfitting/overfitting.md) · [Optimizers](../../6.Improve_NN/5_Optimizers/optimizers.md) · [Normalization](../../6.Improve_NN/2_Normalization/normalization.md)
 - The regression sibling: [../regression/implementation.py](../regression/implementation.py)
